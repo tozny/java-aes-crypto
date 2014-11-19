@@ -138,7 +138,7 @@ public class AesCbcPadding {
     /**
      * A function that generates a password-based AES key. See generateKeyFromPassword.
      * @param password The password to derive the AES key from
-     * @param salt A string version of the salt
+     * @param salt A string version of the salt; base64 encoded.
      * @return The aes key.
      * @throws GeneralSecurityException
      */
