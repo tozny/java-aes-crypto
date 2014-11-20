@@ -39,13 +39,16 @@ import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.SecureRandomSpi;
 import java.security.Security;
+import java.security.spec.KeySpec;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import android.os.Build;
@@ -64,6 +67,9 @@ public class AesCbcPadding {
     private static final String RANDOM_ALGORITHM = "SHA1PRNG";
     private static final int AES_KEY_LENGTH = 256;
     private static final int IV_LENGTH = 16;
+    private static final int PBE_ITERATION_COUNT = 10000;
+    private static final int PBE_SALT_LENGTH = AES_KEY_LENGTH / 8; // same size as key output
+    private static final String PBE_ALGORITHM = "PBKDF2WithHmacSHA1";
     private static final int BASE64_FLAGS = Base64.DEFAULT | Base64.NO_WRAP;
     private static final AtomicBoolean prngFixed = new AtomicBoolean(false);
 
@@ -107,6 +113,62 @@ public class AesCbcPadding {
         keyGen.init(AES_KEY_LENGTH);
         return keyGen.generateKey();
     }
+
+    /**
+     * A function that generates a password-based AES key. It prints out exceptions but
+     * doesn't throw them since none should be encountered. If they are
+     * encountered, the return value is null.
+     *
+     * @param password The password to derive the AES key from.
+     * @return The AES key.
+     * @throws GeneralSecurityException if AES is not implemented on this system,
+     *                                  or a suitable RNG is not available
+     */
+    public static SecretKey generateKeyFromPassword(String password, byte[] salt) throws GeneralSecurityException {
+        fixPrng();
+        KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt,
+                PBE_ITERATION_COUNT, AES_KEY_LENGTH);
+        SecretKeyFactory keyFactory = SecretKeyFactory
+                .getInstance(PBE_ALGORITHM);
+        byte[] keyBytes = keyFactory.generateSecret(keySpec).getEncoded();
+        SecretKey key = new SecretKeySpec(keyBytes, CIPHER);
+        return key;
+    }
+
+    /**
+     * A function that generates a password-based AES key. See generateKeyFromPassword.
+     * @param password The password to derive the AES key from
+     * @param salt A string version of the salt; base64 encoded.
+     * @return The aes key.
+     * @throws GeneralSecurityException
+     */
+    public static SecretKey generateKeyFromPassword(String password, String salt) throws GeneralSecurityException {
+        return generateKeyFromPassword(password, Base64.decode(salt, BASE64_FLAGS));
+    }
+
+    /**
+     * Generates a random salt.
+     * @return The random salt suitable for generateKeyFromPassword.
+     */
+    public static byte[] generateSalt() {
+        fixPrng();
+        SecureRandom random = new SecureRandom();
+        byte[] salt = new byte[PBE_SALT_LENGTH];
+        random.nextBytes(salt);
+        return salt;
+    }
+
+    /**
+     * Converts the given salt into a base64 encoded string suitable for
+     * storage.
+     *
+     * @param salt
+     * @return a base 64 encoded salt string suitable to pass into generateKeyFromPassword.
+     */
+    public static String saltString(byte[] salt) {
+        return Base64.encodeToString(salt, BASE64_FLAGS);
+    }
+
 
     /**
      * Creates a random Initialization Vector (IV) of IV_LENGTH.
@@ -206,7 +268,7 @@ public class AesCbcPadding {
      *
      * @param civ The cipher text and IV
      * @param secretKey The AES key
-     * @param The string encoding to use to decode the bytes after decryption
+     * @param encoding The string encoding to use to decode the bytes after decryption
      * @return A string derived from the decrypted bytes (not base64 encoded)
      * @throws GeneralSecurityException if AES is not implemented on this system
      * @throws UnsupportedEncodingException if the encoding is unsupported
@@ -289,7 +351,7 @@ public class AesCbcPadding {
         public CipherTextAndIv(String base64IvAndCiphertext) {
             String[] civArray = base64IvAndCiphertext.split(":");
             if (civArray.length != 2) {
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("Cannot parse iv:ciphertext");
             } else {
                 iv = Base64.decode(civArray[0], BASE64_FLAGS);
                 cipherText = Base64.decode(civArray[1], BASE64_FLAGS);
