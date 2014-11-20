@@ -66,9 +66,9 @@ public class MyActivity extends Activity {
             //Note: "String.equals" is not a constant-time check, which can sometimes be problematic.
             Log.i("Tozny", "Do they equal: " + textToEncrypt.equals(decryptedText));
         } catch (GeneralSecurityException e) {
-            Log.i("Tozny", "GeneralSecurityException: " + e.toString());
+            Log.e("Tozny", "GeneralSecurityException", e);
         } catch (UnsupportedEncodingException e) {
-            Log.i("Tozny", "UnsupportedEncodingExceptin exception: " + e.toString());
+            Log.e("Tozny", "UnsupportedEncodingException", e);
         }
 
     }
