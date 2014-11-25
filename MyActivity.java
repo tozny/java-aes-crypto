@@ -8,19 +8,16 @@ import android.view.MenuItem;
 
 import javax.crypto.SecretKey;
 
-import com.tozny.crypto.basicaescbc.R;
-
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 
 import static com.tozny.crypto.basicaescbc.AesCbcPadding.generateKeyFromPassword;
 import static com.tozny.crypto.basicaescbc.AesCbcPadding.generateSalt;
-import static com.tozny.crypto.basicaescbc.AesCbcPadding.key;
 import static com.tozny.crypto.basicaescbc.AesCbcPadding.keyString;
-import static com.tozny.crypto.basicaescbc.AesCbcPadding.decrypt;
 import static com.tozny.crypto.basicaescbc.AesCbcPadding.decryptString;
 import static com.tozny.crypto.basicaescbc.AesCbcPadding.encrypt;
 import static com.tozny.crypto.basicaescbc.AesCbcPadding.generateKey;
+import static com.tozny.crypto.basicaescbc.AesCbcPadding.keys;
 import static com.tozny.crypto.basicaescbc.AesCbcPadding.saltString;
 
 
@@ -34,7 +31,7 @@ public class MyActivity extends Activity {
         setContentView(R.layout.activity_my);
 
         try {
-            SecretKey key;
+            AesCbcPadding.SecretKeys key;
             if (PASSWORD_BASED_KEY) {//example for password based keys
                 String salt = saltString(generateSalt());
                 //If you generated the key from a password, you can store the salt and not the key.
@@ -57,8 +54,8 @@ public class MyActivity extends Activity {
             Log.i("Tozny", "Before encryption: " + textToEncrypt);
 
             // Read from storage & decrypt
-            key = key(keyStr); // alternately, regenerate the key from password/salt.
-            AesCbcPadding.CipherTextAndIv civ = encrypt(textToEncrypt, key);
+            key = keys(keyStr); // alternately, regenerate the key from password/salt.
+            AesCbcPadding.CipherTextIvHash civ = encrypt(textToEncrypt, key);
             Log.i("Tozny", "Encrypted: " + civ.toString());
 
             String decryptedText = decryptString(civ, key);
