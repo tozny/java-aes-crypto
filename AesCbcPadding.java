@@ -67,13 +67,13 @@ import static java.util.Arrays.copyOfRange;
  * with SHA1PRNG. Integrity with HmacSHA256.
  */
 public class AesCbcPadding {
-    private static final String CIPHER_TRANSFORMATION = "AES/CBC/PKCS7Padding";
+    private static final String CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String CIPHER = "AES";
     private static final String RANDOM_ALGORITHM = "SHA1PRNG";
-    private static final int AES_KEY_LENGTH_BITS = 256;
+    private static final int AES_KEY_LENGTH_BITS = 128;
     private static final int IV_LENGTH_BYTES = 16;
     private static final int PBE_ITERATION_COUNT = 10000;
-    private static final int PBE_SALT_LENGTH_BITS = AES_KEY_LENGTH_BITS / 8; // same size as key output
+    private static final int PBE_SALT_LENGTH_BITS = AES_KEY_LENGTH_BITS; // same size as key output
     private static final String PBE_ALGORITHM = "PBKDF2WithHmacSHA1";
     private static final int BASE64_FLAGS = Base64.DEFAULT | Base64.NO_WRAP;
     private static final AtomicBoolean prngFixed = new AtomicBoolean(false);
@@ -285,8 +285,8 @@ public class AesCbcPadding {
         byte[] byteCipherText = aesCipherForEncryption.doFinal(plaintext);
         byte[] ivCipherConcat = CipherTextIvMac.ivCipherConcat(iv, byteCipherText);
 
-        byte[] integrityHash = generateHash(ivCipherConcat, secretKeys.getIntegrityKey());
-        return new CipherTextIvMac(byteCipherText, iv, integrityHash);
+        byte[] integrityMac = generateMac(ivCipherConcat, secretKeys.getIntegrityKey());
+        return new CipherTextIvMac(byteCipherText, iv, integrityMac);
     }
 
     /**
@@ -352,14 +352,14 @@ public class AesCbcPadding {
             throws GeneralSecurityException {
 
         byte[] ivCipherConcat = CipherTextIvMac.ivCipherConcat(civ.getIv(), civ.getCipherText());
-        byte[] computedHash = generateHash(ivCipherConcat, secretKeys.getIntegrityKey());
-        if (constantTimeEq(computedHash, civ.getMac())) {
+        byte[] computedMac = generateMac(ivCipherConcat, secretKeys.getIntegrityKey());
+        if (constantTimeEq(computedMac, civ.getMac())) {
             Cipher aesCipherForDecryption = Cipher.getInstance(CIPHER_TRANSFORMATION);
             aesCipherForDecryption.init(Cipher.DECRYPT_MODE, secretKeys.getConfidentialityKey(),
                     new IvParameterSpec(civ.getIv()));
             return aesCipherForDecryption.doFinal(civ.getCipherText());
         } else {
-            throw new GeneralSecurityException("Hash stored in civ does not match computed mac.");
+            throw new GeneralSecurityException("MAC stored in civ does not match computed MAC.");
         }
     }
 
@@ -377,7 +377,7 @@ public class AesCbcPadding {
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeyException
      */
-    public static byte[] generateHash(byte[] byteCipherText, SecretKey integrityKey) throws NoSuchAlgorithmException, InvalidKeyException {
+    public static byte[] generateMac(byte[] byteCipherText, SecretKey integrityKey) throws NoSuchAlgorithmException, InvalidKeyException {
         //Now compute the mac for later integrity checking
         Mac sha256_HMAC = Mac.getInstance(HMAC_ALGORITHM);
         sha256_HMAC.init(integrityKey);
