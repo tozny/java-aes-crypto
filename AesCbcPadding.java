@@ -63,7 +63,7 @@ import static java.util.Arrays.copyOfRange;
 
 /**
  * Simple library for the "right" defaults for AES key generation, encryption,
- * and decryption using 256-bit AES, CBC, PKCS7 padding, and a random 16-byte IV
+ * and decryption using 128-bit AES, CBC, PKCS5 padding, and a random 16-byte IV
  * with SHA1PRNG. Integrity with HmacSHA256.
  */
 public class AesCbcPadding {
