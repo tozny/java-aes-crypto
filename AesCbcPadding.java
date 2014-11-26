@@ -354,7 +354,7 @@ public class AesCbcPadding {
 
         byte[] ivCipherConcat = CipherTextIvHash.ivCipherConcat(civ.getIv(), civ.getCipherText());
         byte[] computedHash = generateHash(ivCipherConcat, secretKeys.integrityKey);
-        if (Arrays.equals (computedHash, civ.getMac())) {
+        if (constantTimeEq(computedHash, civ.getMac())) {
             Cipher aesCipherForDecryption = Cipher.getInstance(CIPHER_TRANSFORMATION);
             aesCipherForDecryption.init(Cipher.DECRYPT_MODE, secretKeys.confidentialityKey,
                     new IvParameterSpec(civ.getIv()));
@@ -403,6 +403,24 @@ public class AesCbcPadding {
             confidentialityKey = confidentialityKeyIn;
             integrityKey = integrityKeyIn;
         }
+    }
+
+
+    /**
+     * Simple constant-time equality of two byte arrays. Used for security to avoid timing attacks.
+     * @param a
+     * @param b
+     * @return true iff the arrays are exactly equal.
+     */
+    public static boolean constantTimeEq(byte[] a, byte[] b) {
+        if (a.length != b.length) {
+            return false;
+        }
+        int result = 0;
+        for (int i = 0; i < a.length; i++) {
+            result |= a[i] ^ b[i];
+        }
+        return result == 0;
     }
 
     /**
