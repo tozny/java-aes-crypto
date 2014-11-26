@@ -88,8 +88,7 @@ public class AesCbcPadding {
      * @return a base 64 encoded AES string & hmac key as base64(aesKey) : base64(hmacKey)
      */
     public static String keyString(SecretKeys keys) {
-        return Base64.encodeToString(keys.confidentialityKey.getEncoded(), BASE64_FLAGS)
-                + ":" + Base64.encodeToString(keys.integrityKey.getEncoded(), BASE64_FLAGS);
+        return keys.toString();
     }
 
     /**
@@ -234,7 +233,7 @@ public class AesCbcPadding {
 
     /**
      * Generates a random IV and encrypts this plain text with the given key. Then attaches
-     * a hashed MAC, which is contained in the CipherTextIvHash class.
+     * a hashed MAC, which is contained in the CipherTextIvMac class.
      *
      * @param plaintext The text that will be encrypted, which
      *                  will be serialized with UTF-8
@@ -243,14 +242,14 @@ public class AesCbcPadding {
      * @throws GeneralSecurityException if AES is not implemented on this system
      * @throws UnsupportedEncodingException if UTF-8 is not supported in this system
      */
-    public static CipherTextIvHash encrypt(String plaintext, SecretKeys secretKeys)
+    public static CipherTextIvMac encrypt(String plaintext, SecretKeys secretKeys)
             throws UnsupportedEncodingException, GeneralSecurityException {
         return encrypt(plaintext, secretKeys, "UTF-8");
     }
 
     /**
      * Generates a random IV and encrypts this plain text with the given key. Then attaches
-     * a hashed MAC, which is contained in the CipherTextIvHash class.
+     * a hashed MAC, which is contained in the CipherTextIvMac class.
      *
      * @param plaintext The bytes that will be encrypted
      * @param secretKeys The AES & HMAC keys with which to encrypt
@@ -258,25 +257,25 @@ public class AesCbcPadding {
      * @throws GeneralSecurityException if AES is not implemented on this system
      * @throws UnsupportedEncodingException if the specified encoding is invalid
      */
-    public static CipherTextIvHash encrypt(String plaintext, SecretKeys secretKeys, String encoding)
+    public static CipherTextIvMac encrypt(String plaintext, SecretKeys secretKeys, String encoding)
             throws UnsupportedEncodingException, GeneralSecurityException {
         return encrypt(plaintext.getBytes(encoding), secretKeys);
     }
 
     /**
      * Generates a random IV and encrypts this plain text with the given key. Then attaches
-     * a hashed MAC, which is contained in the CipherTextIvHash class.
+     * a hashed MAC, which is contained in the CipherTextIvMac class.
      *
      * @param plaintext The text that will be encrypted
      * @param secretKeys The combined AES & HMAC keys with which to encrypt
      * @return a tuple of the IV, ciphertext, mac
      * @throws GeneralSecurityException if AES is not implemented on this system
      */
-    public static CipherTextIvHash encrypt(byte[] plaintext, SecretKeys secretKeys)
+    public static CipherTextIvMac encrypt(byte[] plaintext, SecretKeys secretKeys)
             throws GeneralSecurityException {
         byte[] iv = generateIv();
         Cipher aesCipherForEncryption = Cipher.getInstance(CIPHER_TRANSFORMATION);
-        aesCipherForEncryption.init(Cipher.ENCRYPT_MODE, secretKeys.confidentialityKey, new IvParameterSpec(iv));
+        aesCipherForEncryption.init(Cipher.ENCRYPT_MODE, secretKeys.getConfidentialityKey(), new IvParameterSpec(iv));
 
         /*
          * Now we get back the IV that will actually be used. Some Android
@@ -284,10 +283,10 @@ public class AesCbcPadding {
          */
         iv = aesCipherForEncryption.getIV();
         byte[] byteCipherText = aesCipherForEncryption.doFinal(plaintext);
-        byte[] ivCipherConcat = CipherTextIvHash.ivCipherConcat(iv, byteCipherText);
+        byte[] ivCipherConcat = CipherTextIvMac.ivCipherConcat(iv, byteCipherText);
 
-        byte[] integrityHash = generateHash(ivCipherConcat, secretKeys.integrityKey);
-        return new CipherTextIvHash(byteCipherText, iv, integrityHash);
+        byte[] integrityHash = generateHash(ivCipherConcat, secretKeys.getIntegrityKey());
+        return new CipherTextIvMac(byteCipherText, iv, integrityHash);
     }
 
     /**
@@ -321,7 +320,7 @@ public class AesCbcPadding {
      * @throws GeneralSecurityException if AES is not implemented on this system
      * @throws UnsupportedEncodingException if the encoding is unsupported
      */
-    public static String decryptString(CipherTextIvHash civ, SecretKeys secretKeys, String encoding)
+    public static String decryptString(CipherTextIvMac civ, SecretKeys secretKeys, String encoding)
             throws UnsupportedEncodingException, GeneralSecurityException {
         return new String(decrypt(civ, secretKeys), encoding);
     }
@@ -336,7 +335,7 @@ public class AesCbcPadding {
      * @throws GeneralSecurityException if AES is not implemented on this system
      * @throws UnsupportedEncodingException if UTF-8 is not supported
      */
-    public static String decryptString(CipherTextIvHash civ, SecretKeys secretKeys)
+    public static String decryptString(CipherTextIvMac civ, SecretKeys secretKeys)
             throws UnsupportedEncodingException, GeneralSecurityException {
         return decryptString(civ, secretKeys, "UTF-8");
     }
@@ -349,14 +348,14 @@ public class AesCbcPadding {
      * @return The raw decrypted bytes
      * @throws GeneralSecurityException if MACs don't match or AES is not implemented
      */
-    public static byte[] decrypt(CipherTextIvHash civ, SecretKeys secretKeys)
+    public static byte[] decrypt(CipherTextIvMac civ, SecretKeys secretKeys)
             throws GeneralSecurityException {
 
-        byte[] ivCipherConcat = CipherTextIvHash.ivCipherConcat(civ.getIv(), civ.getCipherText());
-        byte[] computedHash = generateHash(ivCipherConcat, secretKeys.integrityKey);
+        byte[] ivCipherConcat = CipherTextIvMac.ivCipherConcat(civ.getIv(), civ.getCipherText());
+        byte[] computedHash = generateHash(ivCipherConcat, secretKeys.getIntegrityKey());
         if (constantTimeEq(computedHash, civ.getMac())) {
             Cipher aesCipherForDecryption = Cipher.getInstance(CIPHER_TRANSFORMATION);
-            aesCipherForDecryption.init(Cipher.DECRYPT_MODE, secretKeys.confidentialityKey,
+            aesCipherForDecryption.init(Cipher.DECRYPT_MODE, secretKeys.getConfidentialityKey(),
                     new IvParameterSpec(civ.getIv()));
             return aesCipherForDecryption.doFinal(civ.getCipherText());
         } else {
@@ -390,9 +389,8 @@ public class AesCbcPadding {
      */
 
     public static class SecretKeys {
-        public SecretKey confidentialityKey;
-        public SecretKey integrityKey;
-
+        private SecretKey confidentialityKey;
+        private SecretKey integrityKey;
 
         /**
          * Construct the secret keys container.
@@ -400,8 +398,59 @@ public class AesCbcPadding {
          * @param integrityKeyIn the HMAC key
          */
         public SecretKeys(SecretKey confidentialityKeyIn, SecretKey integrityKeyIn) {
-            confidentialityKey = confidentialityKeyIn;
-            integrityKey = integrityKeyIn;
+            setConfidentialityKey(confidentialityKeyIn);
+            setIntegrityKey(integrityKeyIn);
+        }
+
+        public SecretKey getConfidentialityKey() {
+            return confidentialityKey;
+        }
+
+        public void setConfidentialityKey(SecretKey confidentialityKey) {
+            this.confidentialityKey = confidentialityKey;
+        }
+
+        public SecretKey getIntegrityKey() {
+            return integrityKey;
+        }
+
+        public void setIntegrityKey(SecretKey integrityKey) {
+            this.integrityKey = integrityKey;
+        }
+
+        /**
+         * Encodes the two keys as a string
+         * @return base64(confidentialityKey):base64(integrityKey)
+         */
+        @Override
+        public String toString () {
+            return Base64.encodeToString(getConfidentialityKey().getEncoded(), BASE64_FLAGS)
+                    + ":" + Base64.encodeToString(getIntegrityKey().getEncoded(), BASE64_FLAGS);
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + confidentialityKey.hashCode();
+            result = prime * result + integrityKey.hashCode();
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            SecretKeys other = (SecretKeys) obj;
+            if (!integrityKey.equals(other.integrityKey))
+                return false;
+            if (!confidentialityKey.equals(other.confidentialityKey))
+                return false;
+            return true;
         }
     }
 
@@ -426,7 +475,7 @@ public class AesCbcPadding {
     /**
      * Holder class that allows us to bundle ciphertext and IV together.
      */
-    public static class CipherTextIvHash {
+    public static class CipherTextIvMac {
         private final byte[] cipherText;
         private final byte[] iv;
         private final byte[] mac;
@@ -449,7 +498,7 @@ public class AesCbcPadding {
          * @param i The IV
          * @param h The mac
          */
-        public CipherTextIvHash(byte[] c, byte[] i, byte[] h) {
+        public CipherTextIvMac(byte[] c, byte[] i, byte[] h) {
             cipherText = Arrays.copyOf(c, c.length);
             iv = Arrays.copyOf(i, i.length);
             mac = Arrays.copyOf(h, h.length);
@@ -463,7 +512,7 @@ public class AesCbcPadding {
          *            <code>iv:ciphertext</code> The IV and ciphertext must each
          *            be base64-encoded.
          */
-        public CipherTextIvHash(String base64IvAndCiphertext) {
+        public CipherTextIvMac(String base64IvAndCiphertext) {
             String[] civArray = base64IvAndCiphertext.split(":");
             if (civArray.length != 3) {
                 throw new IllegalArgumentException("Cannot parse iv:ciphertext:mac");
@@ -520,7 +569,7 @@ public class AesCbcPadding {
                 return false;
             if (getClass() != obj.getClass())
                 return false;
-            CipherTextIvHash other = (CipherTextIvHash) obj;
+            CipherTextIvMac other = (CipherTextIvMac) obj;
             if (!Arrays.equals(cipherText, other.cipherText))
                 return false;
             if (!Arrays.equals(iv, other.iv))

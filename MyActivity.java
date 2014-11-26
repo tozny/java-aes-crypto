@@ -6,8 +6,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import javax.crypto.SecretKey;
-
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 
@@ -55,7 +53,7 @@ public class MyActivity extends Activity {
 
             // Read from storage & decrypt
             key = keys(keyStr); // alternately, regenerate the key from password/salt.
-            AesCbcPadding.CipherTextIvHash civ = encrypt(textToEncrypt, key);
+            AesCbcPadding.CipherTextIvMac civ = encrypt(textToEncrypt, key);
             Log.i("Tozny", "Encrypted: " + civ.toString());
 
             String decryptedText = decryptString(civ, key);
