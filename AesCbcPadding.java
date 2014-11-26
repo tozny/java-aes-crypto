@@ -70,15 +70,15 @@ public class AesCbcPadding {
     private static final String CIPHER_TRANSFORMATION = "AES/CBC/PKCS7Padding";
     private static final String CIPHER = "AES";
     private static final String RANDOM_ALGORITHM = "SHA1PRNG";
-    private static final int AES_KEY_LENGTH = 256; //bits
-    private static final int IV_LENGTH = 16; //bytes
+    private static final int AES_KEY_LENGTH_BITS = 256;
+    private static final int IV_LENGTH_BYTES = 16;
     private static final int PBE_ITERATION_COUNT = 10000;
-    private static final int PBE_SALT_LENGTH = AES_KEY_LENGTH / 8; // bytes - same size as key output
+    private static final int PBE_SALT_LENGTH_BITS = AES_KEY_LENGTH_BITS / 8; // same size as key output
     private static final String PBE_ALGORITHM = "PBKDF2WithHmacSHA1";
     private static final int BASE64_FLAGS = Base64.DEFAULT | Base64.NO_WRAP;
     private static final AtomicBoolean prngFixed = new AtomicBoolean(false);
     private static final String HMAC_ALGORITHM = "HmacSHA256";
-    private static final int HMAC_KEY_LENGTH = 256; //bits
+    private static final int HMAC_KEY_LENGTH_BITS = 256;
 
     /**
      * Converts the given AES/HMAC keys into a base64 encoded string suitable for
@@ -99,7 +99,7 @@ public class AesCbcPadding {
      * @param keysStr a base64 encoded AES key / hmac key as base64(aesKey) : base64(hmacKey).
      * @return an AES & HMAC key set suitable for other functions.
      */
-    public static SecretKeys keys(String keysStr) {
+    public static SecretKeys keys(String keysStr) throws InvalidKeyException {
         String[] keysArr = keysStr.split(":");
 
         if (keysArr.length != 2) {
@@ -107,9 +107,15 @@ public class AesCbcPadding {
 
         } else {
             byte[] confidentialityKey = Base64.decode(keysArr[0], BASE64_FLAGS);
+            if (confidentialityKey.length != AES_KEY_LENGTH_BITS /8) {
+                throw new InvalidKeyException("Base64 decoded key is not " + AES_KEY_LENGTH_BITS + " bytes");
+            }
             byte[] integrityKey = Base64.decode(keysArr[1], BASE64_FLAGS);
+            if (integrityKey.length != HMAC_KEY_LENGTH_BITS /8) {
+                throw new InvalidKeyException("Base64 decoded key is not " + HMAC_KEY_LENGTH_BITS + " bytes");
+            }
 
-            return new SecretKeys (
+            return new SecretKeys(
                     new SecretKeySpec(confidentialityKey, 0, confidentialityKey.length, CIPHER),
                     new SecretKeySpec(integrityKey, HMAC_ALGORITHM));
         }
@@ -129,14 +135,14 @@ public class AesCbcPadding {
         KeyGenerator keyGen = KeyGenerator.getInstance(CIPHER);
         // No need to provide a SecureRandom or set a seed since that will
         // happen automatically.
-        keyGen.init(AES_KEY_LENGTH);
+        keyGen.init(AES_KEY_LENGTH_BITS);
         SecretKey confidentialityKey = keyGen.generateKey();
 
         //Now make the HMAC key
-        byte[] integrityKeyBytes = randomBytes(HMAC_KEY_LENGTH / 8);//to get bytes
+        byte[] integrityKeyBytes = randomBytes(HMAC_KEY_LENGTH_BITS / 8);//to get bytes
         SecretKey integrityKey = new SecretKeySpec(integrityKeyBytes, HMAC_ALGORITHM);
 
-        return new SecretKeys (confidentialityKey, integrityKey);
+        return new SecretKeys(confidentialityKey, integrityKey);
     }
 
     /**
@@ -153,18 +159,14 @@ public class AesCbcPadding {
         fixPrng();
         //Get enough random bytes for both the AES key and the HMAC key:
         KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt,
-                PBE_ITERATION_COUNT, AES_KEY_LENGTH + HMAC_KEY_LENGTH);
+                PBE_ITERATION_COUNT, AES_KEY_LENGTH_BITS + HMAC_KEY_LENGTH_BITS);
         SecretKeyFactory keyFactory = SecretKeyFactory
                 .getInstance(PBE_ALGORITHM);
         byte[] keyBytes = keyFactory.generateSecret(keySpec).getEncoded();
-        Log.i("Tozny", "keyBytes size: " + keyBytes.length);
 
         // Split the random bytes into two parts:
-        byte[] confidentialityKeyBytes = copyOfRange(keyBytes, 0, AES_KEY_LENGTH/8);
-        Log.i("Tozny", "confidentiality size: " + confidentialityKeyBytes.length);
-
-        byte[] integrityKeyBytes = copyOfRange(keyBytes, AES_KEY_LENGTH/8, AES_KEY_LENGTH/8 + HMAC_KEY_LENGTH/8);
-        Log.i("Tozny", "integrity size: " + integrityKeyBytes.length);
+        byte[] confidentialityKeyBytes = copyOfRange(keyBytes, 0, AES_KEY_LENGTH_BITS /8);
+        byte[] integrityKeyBytes = copyOfRange(keyBytes, AES_KEY_LENGTH_BITS /8, AES_KEY_LENGTH_BITS /8 + HMAC_KEY_LENGTH_BITS /8);
 
         //Generate the AES key
         SecretKey confidentialityKey = new SecretKeySpec(confidentialityKeyBytes, CIPHER);
@@ -172,7 +174,7 @@ public class AesCbcPadding {
         //Generate the HMAC key
         SecretKey integrityKey = new SecretKeySpec(integrityKeyBytes, HMAC_ALGORITHM);
 
-        return new SecretKeys (confidentialityKey, integrityKey);
+        return new SecretKeys(confidentialityKey, integrityKey);
     }
 
     /**
@@ -191,7 +193,7 @@ public class AesCbcPadding {
      * @return The random salt suitable for generateKeyFromPassword.
      */
     public static byte[] generateSalt() throws GeneralSecurityException {
-        return randomBytes (PBE_SALT_LENGTH);
+        return randomBytes(PBE_SALT_LENGTH_BITS);
     }
 
     /**
@@ -207,16 +209,16 @@ public class AesCbcPadding {
 
 
     /**
-     * Creates a random Initialization Vector (IV) of IV_LENGTH.
+     * Creates a random Initialization Vector (IV) of IV_LENGTH_BYTES.
      *
      * @return The byte array of this IV
      * @throws GeneralSecurityException if a suitable RNG is not available
      */
     public static byte[] generateIv() throws GeneralSecurityException {
-        return randomBytes(IV_LENGTH);
+        return randomBytes(IV_LENGTH_BYTES);
     }
 
-    private static byte[] randomBytes (int length) throws GeneralSecurityException {
+    private static byte[] randomBytes(int length) throws GeneralSecurityException {
         fixPrng();
         SecureRandom random = SecureRandom.getInstance(RANDOM_ALGORITHM);
         byte[] b = new byte[length];
@@ -237,7 +239,7 @@ public class AesCbcPadding {
      * @param plaintext The text that will be encrypted, which
      *                  will be serialized with UTF-8
      * @param secretKeys The AES & HMAC keys with which to encrypt
-     * @return a tuple of the IV, ciphertext, hash
+     * @return a tuple of the IV, ciphertext, mac
      * @throws GeneralSecurityException if AES is not implemented on this system
      * @throws UnsupportedEncodingException if UTF-8 is not supported in this system
      */
@@ -252,7 +254,7 @@ public class AesCbcPadding {
      *
      * @param plaintext The bytes that will be encrypted
      * @param secretKeys The AES & HMAC keys with which to encrypt
-     * @return a tuple of the IV, ciphertext, hash
+     * @return a tuple of the IV, ciphertext, mac
      * @throws GeneralSecurityException if AES is not implemented on this system
      * @throws UnsupportedEncodingException if the specified encoding is invalid
      */
@@ -267,7 +269,7 @@ public class AesCbcPadding {
      *
      * @param plaintext The text that will be encrypted
      * @param secretKeys The combined AES & HMAC keys with which to encrypt
-     * @return a tuple of the IV, ciphertext, hash
+     * @return a tuple of the IV, ciphertext, mac
      * @throws GeneralSecurityException if AES is not implemented on this system
      */
     public static CipherTextIvHash encrypt(byte[] plaintext, SecretKeys secretKeys)
@@ -312,7 +314,7 @@ public class AesCbcPadding {
     /**
      * AES CBC decrypt.
      *
-     * @param civ The cipher text, IV, and hash
+     * @param civ The cipher text, IV, and mac
      * @param secretKeys The AES & HMAC keys
      * @param encoding The string encoding to use to decode the bytes after decryption
      * @return A string derived from the decrypted bytes (not base64 encoded)
@@ -327,7 +329,7 @@ public class AesCbcPadding {
     /**
      * AES CBC decrypt.
      *
-     * @param civ The cipher text, IV, and hash
+     * @param civ The cipher text, IV, and mac
      * @param secretKeys The AES & HMAC keys
      * @return A string derived from the decrypted bytes, which are interpreted
      *         as a UTF-8 String
@@ -342,23 +344,23 @@ public class AesCbcPadding {
     /**
      * AES CBC decrypt.
      *
-     * @param civ the cipher text, iv, and hash
+     * @param civ the cipher text, iv, and mac
      * @param secretKeys the AES & HMAC keys
      * @return The raw decrypted bytes
-     * @throws GeneralSecurityException if hashes don't match or AES is not implemented
+     * @throws GeneralSecurityException if MACs don't match or AES is not implemented
      */
     public static byte[] decrypt(CipherTextIvHash civ, SecretKeys secretKeys)
             throws GeneralSecurityException {
 
         byte[] ivCipherConcat = CipherTextIvHash.ivCipherConcat(civ.getIv(), civ.getCipherText());
         byte[] computedHash = generateHash(ivCipherConcat, secretKeys.integrityKey);
-        if (Arrays.equals (computedHash, civ.getHash())) {
+        if (Arrays.equals (computedHash, civ.getMac())) {
             Cipher aesCipherForDecryption = Cipher.getInstance(CIPHER_TRANSFORMATION);
             aesCipherForDecryption.init(Cipher.DECRYPT_MODE, secretKeys.confidentialityKey,
                     new IvParameterSpec(civ.getIv()));
             return aesCipherForDecryption.doFinal(civ.getCipherText());
         } else {
-            throw new GeneralSecurityException("Hash stored in civ does not match computed hash.");
+            throw new GeneralSecurityException("Hash stored in civ does not match computed mac.");
         }
     }
 
@@ -369,7 +371,7 @@ public class AesCbcPadding {
      */
 
     /**
-     * Generate the hash based on HMAC_ALGORITHM
+     * Generate the mac based on HMAC_ALGORITHM
      * @param integrityKey The key used for hmac
      * @param byteCipherText the cipher text
      * @return A byte array of the HMAC for the given key & ciphertext
@@ -377,7 +379,7 @@ public class AesCbcPadding {
      * @throws InvalidKeyException
      */
     public static byte[] generateHash(byte[] byteCipherText, SecretKey integrityKey) throws NoSuchAlgorithmException, InvalidKeyException {
-        //Now compute the hash for later integrity checking
+        //Now compute the mac for later integrity checking
         Mac sha256_HMAC = Mac.getInstance(HMAC_ALGORITHM);
         sha256_HMAC.init(integrityKey);
         return sha256_HMAC.doFinal(byteCipherText);
@@ -409,7 +411,7 @@ public class AesCbcPadding {
     public static class CipherTextIvHash {
         private final byte[] cipherText;
         private final byte[] iv;
-        private final byte[] hash;
+        private final byte[] mac;
 
         public byte[] getCipherText() {
             return cipherText;
@@ -419,20 +421,20 @@ public class AesCbcPadding {
             return iv;
         }
 
-        public byte[] getHash() {
-            return hash;
+        public byte[] getMac() {
+            return mac;
         }
 
         /**
          * Construct a new bundle of ciphertext and IV.
          * @param c The ciphertext
          * @param i The IV
-         * @param h The hash
+         * @param h The mac
          */
         public CipherTextIvHash(byte[] c, byte[] i, byte[] h) {
             cipherText = Arrays.copyOf(c, c.length);
             iv = Arrays.copyOf(i, i.length);
-            hash = Arrays.copyOf(h, h.length);
+            mac = Arrays.copyOf(h, h.length);
         }
 
         /**
@@ -446,16 +448,17 @@ public class AesCbcPadding {
         public CipherTextIvHash(String base64IvAndCiphertext) {
             String[] civArray = base64IvAndCiphertext.split(":");
             if (civArray.length != 3) {
-                throw new IllegalArgumentException("Cannot parse iv:ciphertext:hash");
+                throw new IllegalArgumentException("Cannot parse iv:ciphertext:mac");
             } else {
                 iv = Base64.decode(civArray[0], BASE64_FLAGS);
-                hash = Base64.decode(civArray[1], BASE64_FLAGS);
+                mac = Base64.decode(civArray[1], BASE64_FLAGS);
                 cipherText = Base64.decode(civArray[2], BASE64_FLAGS);
             }
         }
 
         /**
-         * Concatinate the IV to the cipherText using array copy. This is used e.g. before hashing.
+         * Concatinate the IV to the cipherText using array copy.
+         * This is used e.g. before computing mac.
          * @param iv The IV to prepend
          * @param cipherText the cipherText to append
          * @return iv:cipherText, a new byte array.
@@ -468,17 +471,17 @@ public class AesCbcPadding {
         }
 
         /**
-         * Encodes this ciphertext, IV, hash as a string.
+         * Encodes this ciphertext, IV, mac as a string.
          *
-         * @return base64(iv) : base64(hash) : base64(ciphertext).
-         * The iv and hash go first because they're fixed length.
+         * @return base64(iv) : base64(mac) : base64(ciphertext).
+         * The iv and mac go first because they're fixed length.
          */
         @Override
         public String toString() {
             String ivString = Base64.encodeToString(iv, BASE64_FLAGS);
             String cipherTextString = Base64.encodeToString(cipherText, BASE64_FLAGS);
-            String hashString = Base64.encodeToString(hash, BASE64_FLAGS);
-            return String.format(ivString + ":" + hashString + ":" + cipherTextString);
+            String macString = Base64.encodeToString(mac, BASE64_FLAGS);
+            return String.format(ivString + ":" + macString + ":" + cipherTextString);
         }
 
         @Override
@@ -487,7 +490,7 @@ public class AesCbcPadding {
             int result = 1;
             result = prime * result + Arrays.hashCode(cipherText);
             result = prime * result + Arrays.hashCode(iv);
-            result = prime * result + Arrays.hashCode(hash);
+            result = prime * result + Arrays.hashCode(mac);
             return result;
         }
 
@@ -504,7 +507,7 @@ public class AesCbcPadding {
                 return false;
             if (!Arrays.equals(iv, other.iv))
                 return false;
-            if (!Arrays.equals(hash, other.hash))
+            if (!Arrays.equals(mac, other.mac))
                 return false;
             return true;
         }
