@@ -1,4 +1,4 @@
-package com.tozny.crypto.basicaescbc;
+package com.tozny.crypto.android;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -9,14 +9,14 @@ import android.view.MenuItem;
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 
-import static com.tozny.crypto.basicaescbc.AesCbcPadding.generateKeyFromPassword;
-import static com.tozny.crypto.basicaescbc.AesCbcPadding.generateSalt;
-import static com.tozny.crypto.basicaescbc.AesCbcPadding.keyString;
-import static com.tozny.crypto.basicaescbc.AesCbcPadding.decryptString;
-import static com.tozny.crypto.basicaescbc.AesCbcPadding.encrypt;
-import static com.tozny.crypto.basicaescbc.AesCbcPadding.generateKey;
-import static com.tozny.crypto.basicaescbc.AesCbcPadding.keys;
-import static com.tozny.crypto.basicaescbc.AesCbcPadding.saltString;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.generateKeyFromPassword;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.generateSalt;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.keyString;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.decryptString;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.encrypt;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.generateKey;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.keys;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.saltString;
 
 
 public class MyActivity extends Activity {
@@ -29,7 +29,7 @@ public class MyActivity extends Activity {
         setContentView(R.layout.activity_my);
 
         try {
-            AesCbcPadding.SecretKeys key;
+            AesCbcWithIntegrity.SecretKeys key;
             if (PASSWORD_BASED_KEY) {//example for password based keys
                 String salt = saltString(generateSalt());
                 //If you generated the key from a password, you can store the salt and not the key.
@@ -53,7 +53,7 @@ public class MyActivity extends Activity {
 
             // Read from storage & decrypt
             key = keys(keyStr); // alternately, regenerate the key from password/salt.
-            AesCbcPadding.CipherTextIvMac civ = encrypt(textToEncrypt, key);
+            AesCbcWithIntegrity.CipherTextIvMac civ = encrypt(textToEncrypt, key);
             Log.i("Tozny", "Encrypted: " + civ.toString());
 
             String decryptedText = decryptString(civ, key);

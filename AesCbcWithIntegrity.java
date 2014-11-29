@@ -22,7 +22,7 @@
  * Created by Isaac Potoczny-Jones on 11/12/14.
  */
 
-package com.tozny.crypto.basicaescbc;
+package com.tozny.crypto.android;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -58,7 +58,6 @@ import android.os.Process;
 import android.util.Base64;
 import android.util.Log;
 
-import static java.util.Arrays.copyOf;
 import static java.util.Arrays.copyOfRange;
 
 /**
@@ -66,7 +65,7 @@ import static java.util.Arrays.copyOfRange;
  * and decryption using 128-bit AES, CBC, PKCS5 padding, and a random 16-byte IV
  * with SHA1PRNG. Integrity with HmacSHA256.
  */
-public class AesCbcPadding {
+public class AesCbcWithIntegrity {
     private static final String CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String CIPHER = "AES";
     private static final String RANDOM_ALGORITHM = "SHA1PRNG";
