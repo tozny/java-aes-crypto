@@ -58,8 +58,6 @@ import android.os.Process;
 import android.util.Base64;
 import android.util.Log;
 
-import static java.util.Arrays.copyOfRange;
-
 /**
  * Simple library for the "right" defaults for AES key generation, encryption,
  * and decryption using 128-bit AES, CBC, PKCS5 padding, and a random 16-byte IV
@@ -74,7 +72,7 @@ public class AesCbcWithIntegrity {
     private static final int PBE_ITERATION_COUNT = 10000;
     private static final int PBE_SALT_LENGTH_BITS = AES_KEY_LENGTH_BITS; // same size as key output
     private static final String PBE_ALGORITHM = "PBKDF2WithHmacSHA1";
-    private static final int BASE64_FLAGS = Base64.DEFAULT | Base64.NO_WRAP;
+    private static final int BASE64_FLAGS = Base64.NO_WRAP;
     private static final AtomicBoolean prngFixed = new AtomicBoolean(false);
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final int HMAC_KEY_LENGTH_BITS = 256;
@@ -498,9 +496,12 @@ public class AesCbcWithIntegrity {
          * @param h The mac
          */
         public CipherTextIvMac(byte[] c, byte[] i, byte[] h) {
-            cipherText = Arrays.copyOf(c, c.length);
-            iv = Arrays.copyOf(i, i.length);
-            mac = Arrays.copyOf(h, h.length);
+            cipherText = new byte[c.length];
+            System.arraycopy(c, 0, cipherText, 0, c.length);
+            iv = new byte[i.length];
+            System.arraycopy(i, 0, iv, 0, i.length);
+            mac = new byte[h.length];
+            System.arraycopy(h, 0, mac, 0, h.length);
         }
 
         /**
@@ -577,6 +578,21 @@ public class AesCbcWithIntegrity {
                 return false;
             return true;
         }
+    }
+
+    /**
+     * Copy the elements from the start to the end
+     *
+     * @param from  the source
+     * @param start the start index to copy
+     * @param end   the end index to finish
+     * @return the new buffer
+     */
+    private static byte[] copyOfRange(byte[] from, int start, int end) {
+        int length = end - start;
+        byte[] result = new byte[length];
+        System.arraycopy(from, start, result, 0, length);
+        return result;
     }
 
     /**
