@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+repositories {
+    mavenCentral()
+    maven {
+        url "https://oss.sonatype.org/content/repositories/snapshots"
+    }
+}
+
 android {
     compileSdkVersion 21
     buildToolsVersion "21.1.2"
@@ -21,6 +28,8 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile project (':aes-crypto')
+    //compile project (':aes-crypto')
+    compile 'com.scottyab:aes-crypto:0.0.1-SNAPSHOT'
+
     compile 'com.android.support:appcompat-v7:21.0.3'
 }

@@ -3,14 +3,20 @@ java-aes-crypto
 
 A simple Android class for encrypting &amp; decrypting strings, aiming to avoid [serious cryptographic errors](http://tozny.com/blog/encrypting-strings-in-android-lets-make-better-mistakes/) that most such classes suffer from.
 
+
 Features
 ==========
 Here are the features of this class. We believe that these properties are consistent with what a lot of people are looking for when encrypting Strings in Android.
 
 * *Paste-ability*: It's a very simple Java class that works across most or all versions of Android. The class should be easy to paste into an existing codebase. 
-	* In Android library project format and soon to be published to maven central for simple one line gradle dependancy. 
+	* In Android library project format and published to maven central for simple one line gradle dependancy. 
 
 
+```groovy
+dependencies {
+    compile 'com.scottyab:aes-crypto:0.0.1-SNAPSHOT'
+}
+```
 
 * *Works for strings*: It should encrypt arbitrary strings or byte arrays. This means it needs to effectively handle multiple blocks (CBC) and partial blocks (padding). It consistently serializes and deserializes ciphertext, IVs, and key material using base64 to make it easy to store.
 * *Algorithm & Mode*: We chose: AES 128, CBC, and PKCS5 padding. We would have picked GCM for its built-in integrity checking, but that's only available since Android Jelly Bean.
