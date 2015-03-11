@@ -72,8 +72,12 @@ public class AesCbcWithIntegrity {
     private static final int PBE_ITERATION_COUNT = 10000;
     private static final int PBE_SALT_LENGTH_BITS = AES_KEY_LENGTH_BITS; // same size as key output
     private static final String PBE_ALGORITHM = "PBKDF2WithHmacSHA1";
-    private static final int BASE64_FLAGS = Base64.NO_WRAP;
-    private static final AtomicBoolean prngFixed = new AtomicBoolean(false);
+
+    public static final int BASE64_FLAGS = Base64.NO_WRAP;
+
+    //default for testing
+    static final AtomicBoolean prngFixed = new AtomicBoolean(false);
+
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final int HMAC_KEY_LENGTH_BITS = 256;
 
