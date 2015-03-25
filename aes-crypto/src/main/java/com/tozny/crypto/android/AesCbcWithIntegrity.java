@@ -73,6 +73,7 @@ public class AesCbcWithIntegrity {
     private static final int PBE_SALT_LENGTH_BITS = AES_KEY_LENGTH_BITS; // same size as key output
     private static final String PBE_ALGORITHM = "PBKDF2WithHmacSHA1";
 
+    //Made BASE_64_FLAGS public as it's useful to know for compatibility.
     public static final int BASE64_FLAGS = Base64.NO_WRAP;
 
     //default for testing
