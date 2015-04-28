@@ -1,4 +1,4 @@
-package com.tozny.crypto.android;
+package com.tozny.crypto.android.sample;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -9,31 +9,37 @@ import android.view.MenuItem;
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 
-import static com.tozny.crypto.android.AesCbcWithIntegrity.generateKeyFromPassword;
-import static com.tozny.crypto.android.AesCbcWithIntegrity.generateSalt;
-import static com.tozny.crypto.android.AesCbcWithIntegrity.keyString;
+import  com.tozny.crypto.android.AesCbcWithIntegrity;
+
 import static com.tozny.crypto.android.AesCbcWithIntegrity.decryptString;
 import static com.tozny.crypto.android.AesCbcWithIntegrity.encrypt;
 import static com.tozny.crypto.android.AesCbcWithIntegrity.generateKey;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.generateKeyFromPassword;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.generateSalt;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.keyString;
 import static com.tozny.crypto.android.AesCbcWithIntegrity.keys;
 import static com.tozny.crypto.android.AesCbcWithIntegrity.saltString;
 
+/**
+ * Sample shows password based key gen
+ */
+public class MainActivity extends Activity {
+    public static final String TAG = "Tozny";
 
-public class MyActivity extends Activity {
     private static boolean PASSWORD_BASED_KEY = true;
     private static String EXAMPLE_PASSWORD = "LeighHunt";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_my);
+        setContentView(R.layout.activity_main);
 
         try {
             AesCbcWithIntegrity.SecretKeys key;
             if (PASSWORD_BASED_KEY) {//example for password based keys
                 String salt = saltString(generateSalt());
                 //If you generated the key from a password, you can store the salt and not the key.
-                Log.i("Tozny", "Salt: " + salt);
+                Log.i(TAG, "Salt: " + salt);
                 key = generateKeyFromPassword(EXAMPLE_PASSWORD, salt);
             } else {
                 key = generateKey();
@@ -49,21 +55,21 @@ public class MyActivity extends Activity {
                     "Of dimensions not gigantic,\n" +
                     "Though the moonshine mostly keep us,\n" +
                     "Oft in orchards frisk and peep us. ";
-            Log.i("Tozny", "Before encryption: " + textToEncrypt);
+            Log.i(TAG, "Before encryption: " + textToEncrypt);
 
             // Read from storage & decrypt
             key = keys(keyStr); // alternately, regenerate the key from password/salt.
             AesCbcWithIntegrity.CipherTextIvMac civ = encrypt(textToEncrypt, key);
-            Log.i("Tozny", "Encrypted: " + civ.toString());
+            Log.i(TAG, "Encrypted: " + civ.toString());
 
             String decryptedText = decryptString(civ, key);
-            Log.i("Tozny", "Decrypted: " + decryptedText);
+            Log.i(TAG, "Decrypted: " + decryptedText);
             //Note: "String.equals" is not a constant-time check, which can sometimes be problematic.
-            Log.i("Tozny", "Do they equal: " + textToEncrypt.equals(decryptedText));
+            Log.i(TAG, "Do they equal: " + textToEncrypt.equals(decryptedText));
         } catch (GeneralSecurityException e) {
-            Log.e("Tozny", "GeneralSecurityException", e);
+            Log.e(TAG, "GeneralSecurityException", e);
         } catch (UnsupportedEncodingException e) {
-            Log.e("Tozny", "UnsupportedEncodingException", e);
+            Log.e(TAG, "UnsupportedEncodingException", e);
         }
 
     }
@@ -71,7 +77,7 @@ public class MyActivity extends Activity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.my, menu);
+        getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
