@@ -72,6 +72,7 @@ public class AesCbcWithIntegrity {
     private static final int PBE_ITERATION_COUNT = 10000;
     private static final int PBE_SALT_LENGTH_BITS = AES_KEY_LENGTH_BITS; // same size as key output
     private static final String PBE_ALGORITHM = "PBKDF2WithHmacSHA1";
+<<<<<<< HEAD:aes-crypto/src/main/java/com/tozny/crypto/android/AesCbcWithIntegrity.java
 
     //Made BASE_64_FLAGS public as it's useful to know for compatibility.
     public static final int BASE64_FLAGS = Base64.NO_WRAP;
@@ -79,6 +80,12 @@ public class AesCbcWithIntegrity {
     //default for testing
     static final AtomicBoolean prngFixed = new AtomicBoolean(false);
 
+=======
+    public static final int BASE64_FLAGS = Base64.DEFAULT | Base64.NO_WRAP;
+
+    //default for testing
+    static final AtomicBoolean prngFixed = new AtomicBoolean(false);
+>>>>>>> 9cd60680b04edd833cd14b3f65f0578762b7da83:aes-crypto/src/main/java/com/tozny/crypto/android/AesCbcWithIntegrity.java
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final int HMAC_KEY_LENGTH_BITS = 256;
 
