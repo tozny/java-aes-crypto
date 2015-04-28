@@ -28,8 +28,7 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    //compile project (':aes-crypto')
-    compile 'com.scottyab:aes-crypto:0.0.1-SNAPSHOT'
+    compile project (':aes-crypto')
 
     compile 'com.android.support:appcompat-v7:21.0.3'
 }

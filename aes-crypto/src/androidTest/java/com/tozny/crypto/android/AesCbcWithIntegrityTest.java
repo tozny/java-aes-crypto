@@ -11,10 +11,20 @@ public class AesCbcWithIntegrityTest extends AndroidTestCase {
     }
 
     public void testEncryptionDecryptionWorks() throws Exception {
-        AesCbcWithIntegrity.prngFixed.set(true);
         AesCbcWithIntegrity.SecretKeys keys = AesCbcWithIntegrity.generateKey();
-        String plain = AesCbcWithIntegrity.decryptString(AesCbcWithIntegrity.encrypt("some test", keys), keys);
-        assertEquals("some test", plain);
+
+        //encrypt
+        AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac = AesCbcWithIntegrity.encrypt("some test", keys);
+        //store or send to server
+        String ciphertextString = cipherTextIvMac.toString();
+
+        //decrypt
+        String plainText = AesCbcWithIntegrity.decryptString(cipherTextIvMac, keys);
+
+        assertEquals("some test", plainText);
+
+
+
     }
 
 }

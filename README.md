@@ -1,7 +1,7 @@
 java-aes-crypto
 ===============
 
-A simple Android class for encrypting &amp; decrypting strings, aiming to avoid [serious cryptographic errors](http://tozny.com/blog/encrypting-strings-in-android-lets-make-better-mistakes/) that most such classes suffer from. [Show me the code](https://github.com/scottyab/java-aes-crypto/blob/master/aes-crypto/src/main/java/com/tozny/crypto/android/AesCbcWithIntegrity.java)
+A simple Android class for encrypting &amp; decrypting strings, aiming to avoid [serious cryptographic errors](http://tozny.com/blog/encrypting-strings-in-android-lets-make-better-mistakes/) that most such classes suffer from. [Show me the code](https://github.com/tozny/java-aes-crypto/blob/master/aes-crypto/src/main/java/com/tozny/crypto/android/AesCbcWithIntegrity.java)
 
 #Features
 
@@ -17,18 +17,18 @@ Here are the features of this class. We believe that these properties are consis
 #How to include in project?
 
 ###Copy and paste
-It's a single very simple java class, [AesCbcWithIntegrity.java](https://github.com/scottyab/java-aes-crypto/blob/master/aes-crypto/src/main/java/com/tozny/crypto/android/AesCbcWithIntegrity.java) that works across most or all versions of Android. The class should be easy to paste into an existing codebase. 
+It's a single very simple java class, [AesCbcWithIntegrity.java](https://github.com/tozny/java-aes-crypto/blob/master/aes-crypto/src/main/java/com/tozny/crypto/android/AesCbcWithIntegrity.java) that works across most or all versions of Android. The class should be easy to paste into an existing codebase.
 
 ###Android Library project
 The library is in Android library project format so you can clone this project and add as a library module/project. 
 	
-###Maven Dependancy
-We've also published the library AAR file to Maven central for simple one line gradle dependancy managment. 
+###Maven Dependency
+We've also published the library AAR file to Maven central for simple one line gradle dependency management.
 
 
 ```groovy
 dependencies {
-    compile 'com.scottyab:aes-crypto:0.0.1-SNAPSHOT'
+    compile 'com.tozny:aes-crypto:0.0.1'
 }
 ```
 
@@ -38,7 +38,6 @@ dependencies {
 
 
 ```java
-  AesCbcWithIntegrity.prngFixed.set(true);
   AesCbcWithIntegrity.SecretKeys keys = AesCbcWithIntegrity.generateKey();
 ```
 
