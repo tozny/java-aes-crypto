@@ -23,11 +23,6 @@ public class AesCbcWithIntegrityTest extends AndroidTestCase {
 
         assertEquals("some test", plainText);
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 9cd60680b04edd833cd14b3f65f0578762b7da83
     }
 
 }
