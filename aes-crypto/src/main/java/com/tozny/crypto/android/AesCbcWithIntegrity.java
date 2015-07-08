@@ -64,6 +64,10 @@ import android.util.Log;
  * with SHA1PRNG. Integrity with HmacSHA256.
  */
 public class AesCbcWithIntegrity {
+    // If the PRNG fix would not succeed for some reason, we normally will throw an exception.
+    // If ALLOW_BROKEN_PRNG is true, however, we will simply log instead.
+    private static final boolean ALLOW_BROKEN_PRNG = false;
+
     private static final String CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String CIPHER = "AES";
     private static final String RANDOM_ALGORITHM = "SHA1PRNG";
@@ -667,7 +671,11 @@ public class AesCbcWithIntegrity {
                             + bytesRead);
                 }
             } catch (Exception e) {
-                throw new SecurityException("Failed to seed OpenSSL PRNG", e);
+                if (ALLOW_BROKEN_PRNG) {
+                    Log.w(PrngFixes.class.getSimpleName(), "Failed to seed OpenSSL PRNG", e);
+                } else {
+                    throw new SecurityException("Failed to seed OpenSSL PRNG", e);
+                }
             }
         }
 
@@ -706,20 +714,38 @@ public class AesCbcWithIntegrity {
                 // by the Linux PRNG-based SecureRandom implementation.
                 SecureRandom rng1 = new SecureRandom();
                 if (!rng1.getProvider().getClass().getSimpleName().equals("LinuxPRNGSecureRandomProvider")) {
-                    throw new SecurityException("new SecureRandom() backed by wrong Provider: "
-                            + rng1.getProvider().getClass());
+                    if (ALLOW_BROKEN_PRNG) {
+                        Log.w(PrngFixes.class.getSimpleName(),
+                                "new SecureRandom() backed by wrong Provider: " + rng1.getProvider().getClass());
+                        return;
+                    } else {
+                        throw new SecurityException("new SecureRandom() backed by wrong Provider: "
+                                + rng1.getProvider().getClass());
+                    }
                 }
 
-                SecureRandom rng2;
+                SecureRandom rng2 = null;
                 try {
                     rng2 = SecureRandom.getInstance("SHA1PRNG");
                 } catch (NoSuchAlgorithmException e) {
-                    throw new SecurityException("SHA1PRNG not available", e);
+                    if (ALLOW_BROKEN_PRNG) {
+                        Log.w(PrngFixes.class.getSimpleName(), "SHA1PRNG not available", e);
+                        return;
+                    } else {
+                        new SecurityException("SHA1PRNG not available", e);
+                    }
                 }
                 if (!rng2.getProvider().getClass().getSimpleName().equals("LinuxPRNGSecureRandomProvider")) {
-                    throw new SecurityException(
-                            "SecureRandom.getInstance(\"SHA1PRNG\") backed by wrong" + " Provider: "
-                                    + rng2.getProvider().getClass());
+                    if (ALLOW_BROKEN_PRNG) {
+                        Log.w(PrngFixes.class.getSimpleName(),
+                                "SecureRandom.getInstance(\"SHA1PRNG\") backed by wrong" + " Provider: "
+                                + rng2.getProvider().getClass());
+                        return;
+                    } else {
+                        throw new SecurityException(
+                                "SecureRandom.getInstance(\"SHA1PRNG\") backed by wrong" + " Provider: "
+                                        + rng2.getProvider().getClass());
+                    }
                 }
             }
         }
