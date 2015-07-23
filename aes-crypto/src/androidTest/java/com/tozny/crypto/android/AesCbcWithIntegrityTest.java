@@ -25,4 +25,36 @@ public class AesCbcWithIntegrityTest extends AndroidTestCase {
 
     }
 
+
+    public void testEncryptionDecryptionWithPassword() throws Exception {
+        AesCbcWithIntegrity.SecretKeys keys = AesCbcWithIntegrity.generateKeyFromPassword("mypassword", "salty".getBytes());
+
+        //encrypt
+        AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac = AesCbcWithIntegrity.encrypt("some test", keys);
+        //store or send to server
+        String ciphertextString = cipherTextIvMac.toString();
+
+        //decrypt
+        String plainText = AesCbcWithIntegrity.decryptString(cipherTextIvMac, keys);
+
+        assertEquals("some test", plainText);
+
+    }
+
+    public void testEncryptionDecryptionCustomIterationCount() throws Exception {
+        AesCbcWithIntegrity.SecretKeys keys = AesCbcWithIntegrity.generateKeyFromPassword("mypassword", "salty".getBytes(), 1000);
+
+        //encrypt
+        AesCbcWithIntegrity.CipherTextIvMac cipherTextIvMac = AesCbcWithIntegrity.encrypt("some test", keys);
+        //store or send to server
+        String ciphertextString = cipherTextIvMac.toString();
+
+        //decrypt
+        String plainText = AesCbcWithIntegrity.decryptString(cipherTextIvMac, keys);
+
+        assertEquals("some test", plainText);
+
+    }
+
+
 }
