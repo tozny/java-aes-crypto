@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Tozny LLC
+ * Copyright (c) 2014-2015 Tozny LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -64,6 +64,10 @@ import android.util.Log;
  * with SHA1PRNG. Integrity with HmacSHA256.
  */
 public class AesCbcWithIntegrity {
+    // If the PRNG fix would not succeed for some reason, we normally will throw an exception.
+    // If ALLOW_BROKEN_PRNG is true, however, we will simply log instead.
+    private static final boolean ALLOW_BROKEN_PRNG = false;
+
     private static final String CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String CIPHER = "AES";
     private static final String RANDOM_ALGORITHM = "SHA1PRNG";
@@ -150,23 +154,45 @@ public class AesCbcWithIntegrity {
      * doesn't throw them since none should be encountered. If they are
      * encountered, the return value is null.
      *
+     * By default the keys are generated with 10000 iterations. Use {@link #generateKeyFromPassword(String, byte[],
+     * int)} if you want to use different iteration count.
+     *
      * @param password The password to derive the keys from.
+     * @param salt The salt for the keys derived from the {@code password}.
      * @return The AES & HMAC keys.
      * @throws GeneralSecurityException if AES is not implemented on this system,
      *                                  or a suitable RNG is not available
      */
     public static SecretKeys generateKeyFromPassword(String password, byte[] salt) throws GeneralSecurityException {
+        return generateKeyFromPassword(password, salt, PBE_ITERATION_COUNT);
+    }
+
+    /**
+     * A function that generates password-based AES & HMAC keys. It prints out exceptions but
+     * doesn't throw them since none should be encountered. If they are
+     * encountered, the return value is null.
+     *
+     * @param password The password to derive the keys from.
+     * @param salt The salt for the keys derived from the {@code password}.
+     * @param iterationCount The iteration count for the keys generation.
+     * @return The AES & HMAC keys.
+     * @throws GeneralSecurityException if AES is not implemented on this system,
+     *                                  or a suitable RNG is not available
+     */
+    public static SecretKeys generateKeyFromPassword(String password, byte[] salt, int iterationCount) throws
+            GeneralSecurityException {
         fixPrng();
         //Get enough random bytes for both the AES key and the HMAC key:
-        KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt,
-                PBE_ITERATION_COUNT, AES_KEY_LENGTH_BITS + HMAC_KEY_LENGTH_BITS);
+        KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt, iterationCount,
+                AES_KEY_LENGTH_BITS + HMAC_KEY_LENGTH_BITS);
         SecretKeyFactory keyFactory = SecretKeyFactory
                 .getInstance(PBE_ALGORITHM);
         byte[] keyBytes = keyFactory.generateSecret(keySpec).getEncoded();
 
         // Split the random bytes into two parts:
         byte[] confidentialityKeyBytes = copyOfRange(keyBytes, 0, AES_KEY_LENGTH_BITS /8);
-        byte[] integrityKeyBytes = copyOfRange(keyBytes, AES_KEY_LENGTH_BITS /8, AES_KEY_LENGTH_BITS /8 + HMAC_KEY_LENGTH_BITS /8);
+        byte[] integrityKeyBytes = copyOfRange(keyBytes, AES_KEY_LENGTH_BITS / 8,
+                AES_KEY_LENGTH_BITS / 8 + HMAC_KEY_LENGTH_BITS / 8);
 
         //Generate the AES key
         SecretKey confidentialityKey = new SecretKeySpec(confidentialityKeyBytes, CIPHER);
@@ -178,14 +204,34 @@ public class AesCbcWithIntegrity {
     }
 
     /**
-     * A function that generates password-based AES & HMAC keys. See generateKeyFromPassword.
-     * @param password The password to derive the AES/HMAC keys from
+     * A function that generates password-based AES & HMAC keys. See {@link #generateKeyFromPassword(String, byte[])}
+     * for more details.
+     *
+     * By default the keys are generated with 10000 iterations. Use {@link #generateKeyFromPassword(String, String,
+     * int)} if you want to use different iteration count.
+     *
+     * @param password The password to derive the AES/HMAC keys from.
      * @param salt A string version of the salt; base64 encoded.
      * @return The AES & HMAC keys.
      * @throws GeneralSecurityException
      */
     public static SecretKeys generateKeyFromPassword(String password, String salt) throws GeneralSecurityException {
-        return generateKeyFromPassword(password, Base64.decode(salt, BASE64_FLAGS));
+        return generateKeyFromPassword(password, salt, PBE_ITERATION_COUNT);
+    }
+
+    /**
+     * A function that generates password-based AES & HMAC keys. See
+     * {@link #generateKeyFromPassword(String, byte[], int)} for more details.
+     *
+     * @param password The password to derive the AES/HMAC keys from
+     * @param salt A string version of the salt; base64 encoded.
+     * @param iterationCount The iteration count for the key generation.
+     * @return The AES & HMAC keys.
+     * @throws GeneralSecurityException
+     */
+    public static SecretKeys generateKeyFromPassword(String password, String salt, int iterationCount)
+            throws GeneralSecurityException {
+        return generateKeyFromPassword(password, Base64.decode(salt, BASE64_FLAGS), iterationCount);
     }
 
     /**
@@ -667,7 +713,11 @@ public class AesCbcWithIntegrity {
                             + bytesRead);
                 }
             } catch (Exception e) {
-                throw new SecurityException("Failed to seed OpenSSL PRNG", e);
+                if (ALLOW_BROKEN_PRNG) {
+                    Log.w(PrngFixes.class.getSimpleName(), "Failed to seed OpenSSL PRNG", e);
+                } else {
+                    throw new SecurityException("Failed to seed OpenSSL PRNG", e);
+                }
             }
         }
 
@@ -688,32 +738,57 @@ public class AesCbcWithIntegrity {
             // Install a Linux PRNG-based SecureRandom implementation as the
             // default, if not yet installed.
             Provider[] secureRandomProviders = Security.getProviders("SecureRandom.SHA1PRNG");
-            if ((secureRandomProviders == null)
-                    || (secureRandomProviders.length < 1)
-                    || (!LinuxPRNGSecureRandomProvider.class.equals(secureRandomProviders[0]
-                            .getClass()))) {
-                Security.insertProviderAt(new LinuxPRNGSecureRandomProvider(), 1);
-            }
 
-            // Assert that new SecureRandom() and
-            // SecureRandom.getInstance("SHA1PRNG") return a SecureRandom backed
-            // by the Linux PRNG-based SecureRandom implementation.
-            SecureRandom rng1 = new SecureRandom();
-            if (!LinuxPRNGSecureRandomProvider.class.equals(rng1.getProvider().getClass())) {
-                throw new SecurityException("new SecureRandom() backed by wrong Provider: "
-                        + rng1.getProvider().getClass());
-            }
+            // Insert and check the provider atomically.
+            // The official Android Java libraries use synchronized methods for
+            // insertProviderAt, etc., so synchronizing on the class should
+            // make things more stable, and prevent race conditions with other
+            // versions of this code.
+            synchronized (java.security.Security.class) {
+                if ((secureRandomProviders == null)
+                        || (secureRandomProviders.length < 1)
+                        || (!secureRandomProviders[0].getClass().getSimpleName().equals("LinuxPRNGSecureRandomProvider"))) {
+                    Security.insertProviderAt(new LinuxPRNGSecureRandomProvider(), 1);
+                }
 
-            SecureRandom rng2;
-            try {
-                rng2 = SecureRandom.getInstance("SHA1PRNG");
-            } catch (NoSuchAlgorithmException e) {
-                throw new SecurityException("SHA1PRNG not available", e);
-            }
-            if (!LinuxPRNGSecureRandomProvider.class.equals(rng2.getProvider().getClass())) {
-                throw new SecurityException(
-                        "SecureRandom.getInstance(\"SHA1PRNG\") backed by wrong" + " Provider: "
+                // Assert that new SecureRandom() and
+                // SecureRandom.getInstance("SHA1PRNG") return a SecureRandom backed
+                // by the Linux PRNG-based SecureRandom implementation.
+                SecureRandom rng1 = new SecureRandom();
+                if (!rng1.getProvider().getClass().getSimpleName().equals("LinuxPRNGSecureRandomProvider")) {
+                    if (ALLOW_BROKEN_PRNG) {
+                        Log.w(PrngFixes.class.getSimpleName(),
+                                "new SecureRandom() backed by wrong Provider: " + rng1.getProvider().getClass());
+                        return;
+                    } else {
+                        throw new SecurityException("new SecureRandom() backed by wrong Provider: "
+                                + rng1.getProvider().getClass());
+                    }
+                }
+
+                SecureRandom rng2 = null;
+                try {
+                    rng2 = SecureRandom.getInstance("SHA1PRNG");
+                } catch (NoSuchAlgorithmException e) {
+                    if (ALLOW_BROKEN_PRNG) {
+                        Log.w(PrngFixes.class.getSimpleName(), "SHA1PRNG not available", e);
+                        return;
+                    } else {
+                        new SecurityException("SHA1PRNG not available", e);
+                    }
+                }
+                if (!rng2.getProvider().getClass().getSimpleName().equals("LinuxPRNGSecureRandomProvider")) {
+                    if (ALLOW_BROKEN_PRNG) {
+                        Log.w(PrngFixes.class.getSimpleName(),
+                                "SecureRandom.getInstance(\"SHA1PRNG\") backed by wrong" + " Provider: "
                                 + rng2.getProvider().getClass());
+                        return;
+                    } else {
+                        throw new SecurityException(
+                                "SecureRandom.getInstance(\"SHA1PRNG\") backed by wrong" + " Provider: "
+                                        + rng2.getProvider().getClass());
+                    }
+                }
             }
         }
 
