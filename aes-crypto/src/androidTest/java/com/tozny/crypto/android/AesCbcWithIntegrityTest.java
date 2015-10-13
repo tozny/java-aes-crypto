@@ -57,4 +57,14 @@ public class AesCbcWithIntegrityTest extends AndroidTestCase {
     }
 
 
+    public void testEncryptionDecryptionWithDodgySalt() throws Exception {
+        try {
+            AesCbcWithIntegrity.SecretKeys keys = AesCbcWithIntegrity.generateKeyFromPassword("mypassword", "ABCD + == + EFG!@$%£|~%  ^%$");
+            fail("Salt contains invalid base64 chars, an error should be thrown but wasn't");
+        }catch (IllegalArgumentException e){
+            //ignore this should happen
+        }
+
+    }
+
 }
