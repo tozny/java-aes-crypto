@@ -53,6 +53,8 @@ dependencies {
 ##Decrypt
 
 ```java
+  //Use the constructor to re-create the CipherTextIvMac class from the string:
+  CipherTextIvMac cipherTextIvMac = new CipherTextIvMac (cipherTextString);
   String plainText = AesCbcWithIntegrity.decryptString(cipherTextIvMac, keys);
 ```  
 
