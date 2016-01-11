@@ -705,7 +705,7 @@ public class AesCbcWithIntegrity {
             synchronized (java.security.Security.class) {
                 if ((secureRandomProviders == null)
                         || (secureRandomProviders.length < 1)
-		    || (!secureRandomProviders[0].getClass().getSimpleName().equals(LinuxPRNGSecureRandomProvider.getClassName()))) {
+		    || (!secureRandomProviders[0].getClass().getSimpleName().equals(LinuxPRNGSecureRandomProvider.class.getSimpleName()))) {
                     Security.insertProviderAt(new LinuxPRNGSecureRandomProvider(), 1);
                 }
 
@@ -713,7 +713,7 @@ public class AesCbcWithIntegrity {
                 // SecureRandom.getInstance("SHA1PRNG") return a SecureRandom backed
                 // by the Linux PRNG-based SecureRandom implementation.
                 SecureRandom rng1 = new SecureRandom();
-                if (!rng1.getProvider().getClass().getSimpleName().equals(LinuxPRNGSecureRandomProvider.getClassName())) {
+                if (!rng1.getProvider().getClass().getSimpleName().equals(LinuxPRNGSecureRandomProvider.class.getSimpleName())) {
                     if (ALLOW_BROKEN_PRNG) {
                         Log.w(PrngFixes.class.getSimpleName(),
                                 "new SecureRandom() backed by wrong Provider: " + rng1.getProvider().getClass());
@@ -735,7 +735,7 @@ public class AesCbcWithIntegrity {
                         new SecurityException("SHA1PRNG not available", e);
                     }
                 }
-                if (!rng2.getProvider().getClass().getSimpleName().equals(LinuxPRNGSecureRandomProvider.getClassName())) {
+                if (!rng2.getProvider().getClass().getSimpleName().equals(LinuxPRNGSecureRandomProvider.class.getSimpleName())) {
                     if (ALLOW_BROKEN_PRNG) {
                         Log.w(PrngFixes.class.getSimpleName(),
                                 "SecureRandom.getInstance(\"SHA1PRNG\") backed by wrong" + " Provider: "
