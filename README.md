@@ -58,6 +58,10 @@ dependencies {
   String plainText = AesCbcWithIntegrity.decryptString(cipherTextIvMac, keys);
 ```  
 
+##Storing Keys
+Once you've generated a random key, you naturally might want to store it. This may work for some use cases, but please be aware that if you store the key in the same place that you store the encrypted data, your solution is not cryptographically sound since the attacker can just get both the key and the encrypted text. Instead, you should use either the [Keystore infrastructure](http://developer.android.com/training/articles/keystore.html) or consider generating the key from a passphrase and using that to encrypt the user data.
+
+If despite the above you still want to store the key, you can convert the keys to a string using the included functions and store them in preferences or SQLite.
 
 #License 
 The included MIT license is compatible with open source or commercial products. 
