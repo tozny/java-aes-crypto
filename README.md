@@ -56,6 +56,8 @@ dependencies {
   String plainText = AesCbcWithIntegrity.decryptString(cipherTextIvMac, keys);
 ```  
 
+##Performance
+Note that the password-based key derivation that can be used in this library generates keys in an intentionally slow manner by increasing the number of iterations, [according to best practice](https://tools.ietf.org/html/rfc2898#page-8). This helps to protect against brute-force attacks. If your app's performance is unacceptable during password-based key generation, you may consider reducing the number of rounds by altering the library. (See the constant PBE_ITERATION_COUNT). The minimum acceptable number of rounds is 1000 but there is no "correct" number of rounds; it's a trade-off between performance and security that is specific to your application.
 
 #License 
 The included MIT license is compatible with open source or commercial products. 
