@@ -85,6 +85,10 @@ public class AesCbcWithIntegrity {
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final int HMAC_KEY_LENGTH_BITS = 256;
 
+    private AesCbcWithIntegrity() throws InstantiationException {
+        throw new InstantiationException("This class is not created for instantiation");
+    }
+
     /**
      * Converts the given AES/HMAC keys into a base64 encoded string suitable for
      * storage. Sister function of keys.
@@ -485,18 +489,6 @@ public class AesCbcWithIntegrity {
         private final byte[] iv;
         private final byte[] mac;
 
-        public byte[] getCipherText() {
-            return cipherText;
-        }
-
-        public byte[] getIv() {
-            return iv;
-        }
-
-        public byte[] getMac() {
-            return mac;
-        }
-
         /**
          * Construct a new bundle of ciphertext and IV.
          * @param c The ciphertext
@@ -529,6 +521,18 @@ public class AesCbcWithIntegrity {
                 mac = Base64.decode(civArray[1], BASE64_FLAGS);
                 cipherText = Base64.decode(civArray[2], BASE64_FLAGS);
             }
+        }
+
+        public byte[] getCipherText() {
+            return cipherText;
+        }
+
+        public byte[] getIv() {
+            return iv;
+        }
+
+        public byte[] getMac() {
+            return mac;
         }
 
         /**
@@ -859,7 +863,7 @@ public class AesCbcWithIntegrity {
                 return seed;
             }
 
-            private DataInputStream getUrandomInputStream() {
+            private static DataInputStream getUrandomInputStream() {
                 synchronized (sLock) {
                     if (sUrandomIn == null) {
                         // NOTE: Consider inserting a BufferedInputStream
@@ -877,7 +881,7 @@ public class AesCbcWithIntegrity {
                 }
             }
 
-            private OutputStream getUrandomOutputStream() throws IOException {
+            private static OutputStream getUrandomOutputStream() throws IOException {
                 synchronized (sLock) {
                     if (sUrandomOut == null) {
                         sUrandomOut = new FileOutputStream(URANDOM_FILE);
