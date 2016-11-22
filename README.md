@@ -1,6 +1,8 @@
 java-aes-crypto
 ===============
 
+** NOTE: this fork has diverged from original and is publishing to maven central under groupId `com.scottyab` **
+
 A simple Android class for encrypting &amp; decrypting strings, aiming to avoid [serious cryptographic errors](http://tozny.com/blog/encrypting-strings-in-android-lets-make-better-mistakes/) that most such classes suffer from. [Show me the code](https://github.com/tozny/java-aes-crypto/blob/master/aes-crypto/src/main/java/com/tozny/crypto/android/AesCbcWithIntegrity.java)
 
 #Features
@@ -28,7 +30,7 @@ We've also published the library AAR file to Maven central for simple one line g
 
 ```groovy
 dependencies {
-    compile 'com.tozny:aes-crypto:0.0.1'
+    compile 'com.scottyab:aes-crypto:0.0.3'
 }
 ```
 

@@ -154,23 +154,45 @@ public class AesCbcWithIntegrity {
      * doesn't throw them since none should be encountered. If they are
      * encountered, the return value is null.
      *
+     * By default the keys are generated with 10000 iterations. Use {@link #generateKeyFromPassword(String, byte[],
+     * int)} if you want to use different iteration count.
+     *
      * @param password The password to derive the keys from.
+     * @param salt The salt for the keys derived from the {@code password}.
      * @return The AES & HMAC keys.
      * @throws GeneralSecurityException if AES is not implemented on this system,
      *                                  or a suitable RNG is not available
      */
     public static SecretKeys generateKeyFromPassword(String password, byte[] salt) throws GeneralSecurityException {
+        return generateKeyFromPassword(password, salt, PBE_ITERATION_COUNT);
+    }
+
+    /**
+     * A function that generates password-based AES & HMAC keys. It prints out exceptions but
+     * doesn't throw them since none should be encountered. If they are
+     * encountered, the return value is null.
+     *
+     * @param password The password to derive the keys from.
+     * @param salt The salt for the keys derived from the {@code password}.
+     * @param iterationCount The iteration count for the keys generation.
+     * @return The AES & HMAC keys.
+     * @throws GeneralSecurityException if AES is not implemented on this system,
+     *                                  or a suitable RNG is not available
+     */
+    public static SecretKeys generateKeyFromPassword(String password, byte[] salt, int iterationCount) throws
+            GeneralSecurityException {
         fixPrng();
         //Get enough random bytes for both the AES key and the HMAC key:
-        KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt,
-                PBE_ITERATION_COUNT, AES_KEY_LENGTH_BITS + HMAC_KEY_LENGTH_BITS);
+        KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt, iterationCount,
+                AES_KEY_LENGTH_BITS + HMAC_KEY_LENGTH_BITS);
         SecretKeyFactory keyFactory = SecretKeyFactory
                 .getInstance(PBE_ALGORITHM);
         byte[] keyBytes = keyFactory.generateSecret(keySpec).getEncoded();
 
         // Split the random bytes into two parts:
         byte[] confidentialityKeyBytes = copyOfRange(keyBytes, 0, AES_KEY_LENGTH_BITS /8);
-        byte[] integrityKeyBytes = copyOfRange(keyBytes, AES_KEY_LENGTH_BITS /8, AES_KEY_LENGTH_BITS /8 + HMAC_KEY_LENGTH_BITS /8);
+        byte[] integrityKeyBytes = copyOfRange(keyBytes, AES_KEY_LENGTH_BITS / 8,
+                AES_KEY_LENGTH_BITS / 8 + HMAC_KEY_LENGTH_BITS / 8);
 
         //Generate the AES key
         SecretKey confidentialityKey = new SecretKeySpec(confidentialityKeyBytes, CIPHER);
@@ -182,14 +204,34 @@ public class AesCbcWithIntegrity {
     }
 
     /**
-     * A function that generates password-based AES & HMAC keys. See generateKeyFromPassword.
-     * @param password The password to derive the AES/HMAC keys from
+     * A function that generates password-based AES & HMAC keys. See {@link #generateKeyFromPassword(String, byte[])}
+     * for more details.
+     *
+     * By default the keys are generated with 10000 iterations. Use {@link #generateKeyFromPassword(String, String,
+     * int)} if you want to use different iteration count.
+     *
+     * @param password The password to derive the AES/HMAC keys from.
      * @param salt A string version of the salt; base64 encoded.
      * @return The AES & HMAC keys.
      * @throws GeneralSecurityException
      */
     public static SecretKeys generateKeyFromPassword(String password, String salt) throws GeneralSecurityException {
-        return generateKeyFromPassword(password, Base64.decode(salt, BASE64_FLAGS));
+        return generateKeyFromPassword(password, salt, PBE_ITERATION_COUNT);
+    }
+
+    /**
+     * A function that generates password-based AES & HMAC keys. See
+     * {@link #generateKeyFromPassword(String, byte[], int)} for more details.
+     *
+     * @param password The password to derive the AES/HMAC keys from
+     * @param salt A string version of the salt; base64 encoded.
+     * @param iterationCount The iteration count for the key generation.
+     * @return The AES & HMAC keys.
+     * @throws GeneralSecurityException
+     */
+    public static SecretKeys generateKeyFromPassword(String password, String salt, int iterationCount)
+            throws GeneralSecurityException {
+        return generateKeyFromPassword(password, Base64.decode(salt, BASE64_FLAGS), iterationCount);
     }
 
     /**
@@ -657,6 +699,7 @@ public class AesCbcWithIntegrity {
             }
 
             try {
+                //Log.i(PrngFixes.class.getSimpleName(), "applying OpenSSLFix");
                 // Mix in the device- and invocation-specific seed.
                 Class.forName("org.apache.harmony.xnet.provider.jsse.NativeCrypto")
                         .getMethod("RAND_seed", byte[].class).invoke(null, generateSeed());
@@ -693,6 +736,7 @@ public class AesCbcWithIntegrity {
                 return;
             }
 
+            //Log.i(PrngFixes.class.getSimpleName(), "Applying the  Linux PRNG-based SecureRandom to fix PRNG");
             // Install a Linux PRNG-based SecureRandom implementation as the
             // default, if not yet installed.
             Provider[] secureRandomProviders = Security.getProviders("SecureRandom.SHA1PRNG");
@@ -705,7 +749,8 @@ public class AesCbcWithIntegrity {
             synchronized (java.security.Security.class) {
                 if ((secureRandomProviders == null)
                         || (secureRandomProviders.length < 1)
-                        || (!secureRandomProviders[0].getClass().getSimpleName().equals("LinuxPRNGSecureRandomProvider"))) {
+                        || (!secureRandomProviders[0].getClass().getSimpleName().equals(LinuxPRNGSecureRandomProvider.class.getSimpleName()))) {
+                    //Log.i(PrngFixes.class.getSimpleName(), "inserting new PRNG provider at pos 1: [" + LinuxPRNGSecureRandomProvider.class.getSimpleName() +"]");
                     Security.insertProviderAt(new LinuxPRNGSecureRandomProvider(), 1);
                 }
 
@@ -713,7 +758,7 @@ public class AesCbcWithIntegrity {
                 // SecureRandom.getInstance("SHA1PRNG") return a SecureRandom backed
                 // by the Linux PRNG-based SecureRandom implementation.
                 SecureRandom rng1 = new SecureRandom();
-                if (!rng1.getProvider().getClass().getSimpleName().equals("LinuxPRNGSecureRandomProvider")) {
+                if (!rng1.getProvider().getClass().getSimpleName().equals(LinuxPRNGSecureRandomProvider.class.getSimpleName())) {
                     if (ALLOW_BROKEN_PRNG) {
                         Log.w(PrngFixes.class.getSimpleName(),
                                 "new SecureRandom() backed by wrong Provider: " + rng1.getProvider().getClass());
@@ -735,7 +780,7 @@ public class AesCbcWithIntegrity {
                         new SecurityException("SHA1PRNG not available", e);
                     }
                 }
-                if (!rng2.getProvider().getClass().getSimpleName().equals("LinuxPRNGSecureRandomProvider")) {
+                if (!rng2.getProvider().getClass().getSimpleName().equals(LinuxPRNGSecureRandomProvider.class.getSimpleName())) {
                     if (ALLOW_BROKEN_PRNG) {
                         Log.w(PrngFixes.class.getSimpleName(),
                                 "SecureRandom.getInstance(\"SHA1PRNG\") backed by wrong" + " Provider: "
@@ -754,6 +799,7 @@ public class AesCbcWithIntegrity {
          * {@code Provider} of {@code SecureRandom} engines which pass through
          * all requests to the Linux PRNG.
          */
+
         private static class LinuxPRNGSecureRandomProvider extends Provider {
 
             public LinuxPRNGSecureRandomProvider() {
