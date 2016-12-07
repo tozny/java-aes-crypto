@@ -515,12 +515,11 @@ public class AesCbcWithIntegrity {
          * Constructs a new bundle of ciphertext and IV from a string of the
          * format <code>base64(iv):base64(ciphertext)</code>.
          *
-         * @param base64IvAndCiphertext A string of the format
-         *            <code>iv:ciphertext</code> The IV and ciphertext must each
-         *            be base64-encoded.
+         * @param base64IvMacCipherText A string of the format
+         *            <code>base64(iv) : base64(mac) : base64(ciphertext)</code> 
          */
-        public CipherTextIvMac(String base64IvAndCiphertext) {
-            String[] civArray = base64IvAndCiphertext.split(":");
+        public CipherTextIvMac(String base64IvMacCipherText) {
+            String[] civArray = base64IvMacCipherText.split(":");
             if (civArray.length != 3) {
                 throw new IllegalArgumentException("Cannot parse iv:ciphertext:mac");
             } else {
@@ -545,7 +544,7 @@ public class AesCbcWithIntegrity {
         }
 
         /**
-         * Encodes this ciphertext, IV, mac as a string.
+         * Encodes this IV, mac, ciphertext as a string.
          *
          * @return base64(iv) : base64(mac) : base64(ciphertext).
          * The iv and mac go first because they're fixed length.
