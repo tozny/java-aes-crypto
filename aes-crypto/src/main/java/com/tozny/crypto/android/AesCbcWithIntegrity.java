@@ -70,7 +70,6 @@ public class AesCbcWithIntegrity {
 
     private static final String CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String CIPHER = "AES";
-    private static final String RANDOM_ALGORITHM = "SHA1PRNG";
     private static final int AES_KEY_LENGTH_BITS = 128;
     private static final int IV_LENGTH_BYTES = 16;
     private static final int PBE_ITERATION_COUNT = 10000;
@@ -224,7 +223,7 @@ public class AesCbcWithIntegrity {
 
     private static byte[] randomBytes(int length) throws GeneralSecurityException {
         fixPrng();
-        SecureRandom random = SecureRandom.getInstance(RANDOM_ALGORITHM);
+        SecureRandom random = new SecureRandom();
         byte[] b = new byte[length];
         random.nextBytes(b);
         return b;
