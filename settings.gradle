@@ -1,1 +1,1 @@
-include ':sample', ':aes-crypto'
+include ':sample', ':aes-crypto', ':aes-crypto-jre'
