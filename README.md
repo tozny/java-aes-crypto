@@ -30,19 +30,31 @@ and add as a library module/project.
 
 ## Maven Dependency
 
-We've also published the library AAR file to Maven central for simple one line
-gradle dependency management.
+We've also published the library AAR file via Jitpack for simple
+gradle dependency management:
+
+Add the Jitpack repository to your root build.gradle:
+
+```groovy
+allprojects {
+  repositories {
+    ...
+    maven { url 'https://jitpack.io' }
+  }
+}
+```
+
+Add the dependency to your project's build.gradle:
 
 ```groovy
 dependencies {
-    compile 'com.tozny:aes-crypto:0.0.1'
+  compile 'com.github.tozny:java-aes-crypto:1.1.0'
 }
 ```
 
 # Examples
 
 ## Generate new key
-
 
 ```java
   AesCbcWithIntegrity.SecretKeys keys = AesCbcWithIntegrity.generateKey();
