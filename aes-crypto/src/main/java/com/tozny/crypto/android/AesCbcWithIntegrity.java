@@ -522,7 +522,7 @@ public class AesCbcWithIntegrity {
         public CipherTextIvMac(String base64IvAndCiphertext) {
             String[] civArray = base64IvAndCiphertext.split(":");
             if (civArray.length != 3) {
-                throw new IllegalArgumentException("Cannot parse iv:ciphertext:mac");
+                throw new IllegalArgumentException("Cannot parse iv:mac:ciphertext");
             } else {
                 iv = Base64.decode(civArray[0], BASE64_FLAGS);
                 mac = Base64.decode(civArray[1], BASE64_FLAGS);
