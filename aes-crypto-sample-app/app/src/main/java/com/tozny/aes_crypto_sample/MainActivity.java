@@ -1,33 +1,25 @@
-package com.tozny.crypto.android.sample;
+package com.tozny.aes_crypto_sample;
 
-import android.app.Activity;
+import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
 
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 
-import  com.tozny.crypto.android.AesCbcWithIntegrity;
+import com.tozny.aeswithintegritysample.R;
+import com.tozny.crypto.android.AesCbcWithIntegrity;
+import static com.tozny.crypto.android.AesCbcWithIntegrity.*;
 
-import static com.tozny.crypto.android.AesCbcWithIntegrity.decryptString;
-import static com.tozny.crypto.android.AesCbcWithIntegrity.encrypt;
-import static com.tozny.crypto.android.AesCbcWithIntegrity.generateKey;
-import static com.tozny.crypto.android.AesCbcWithIntegrity.generateKeyFromPassword;
-import static com.tozny.crypto.android.AesCbcWithIntegrity.generateSalt;
-import static com.tozny.crypto.android.AesCbcWithIntegrity.keyString;
-import static com.tozny.crypto.android.AesCbcWithIntegrity.keys;
-import static com.tozny.crypto.android.AesCbcWithIntegrity.saltString;
+public class MainActivity extends AppCompatActivity {
 
-/**
- * Sample shows password based key gen
- */
-public class MainActivity extends Activity {
     public static final String TAG = "Tozny";
 
     private static boolean PASSWORD_BASED_KEY = true;
-    private static String EXAMPLE_PASSWORD = "LeighHunt";
+    private static String EXAMPLE_PASSWORD = "always use passphrases for passwords wherever possible!";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,10 +43,7 @@ public class MainActivity extends Activity {
             String keyStr = keyString(key);
             key = null; //Pretend to throw that away so we can demonstrate converting it from str
 
-            String textToEncrypt = "We, the Fairies, blithe and antic,\n" +
-                    "Of dimensions not gigantic,\n" +
-                    "Though the moonshine mostly keep us,\n" +
-                    "Oft in orchards frisk and peep us. ";
+            String textToEncrypt = "Testing shows the presence, not the absence of bugs.\n\n  Edsger W. Dijkstra";
             Log.i(TAG, "Before encryption: " + textToEncrypt);
 
             // Read from storage & decrypt
@@ -66,30 +55,14 @@ public class MainActivity extends Activity {
             Log.i(TAG, "Decrypted: " + decryptedText);
             //Note: "String.equals" is not a constant-time check, which can sometimes be problematic.
             Log.i(TAG, "Do they equal: " + textToEncrypt.equals(decryptedText));
+
+            TextView t = (TextView) findViewById(R.id.textView);
+            t.setText(decryptedText);
         } catch (GeneralSecurityException e) {
             Log.e(TAG, "GeneralSecurityException", e);
         } catch (UnsupportedEncodingException e) {
             Log.e(TAG, "UnsupportedEncodingException", e);
         }
 
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 }
